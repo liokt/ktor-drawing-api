@@ -1,5 +1,6 @@
 package com.liot
 
+import com.google.gson.Gson
 import com.liot.data.routes.createRoomRoute
 import com.liot.data.routes.getRoomsRoute
 import com.liot.data.routes.joinRoomRoute
@@ -15,6 +16,7 @@ import io.ktor.util.*
 import io.ktor.websocket.*
 
 val server = DrawingServer()
+val gson = Gson()
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
