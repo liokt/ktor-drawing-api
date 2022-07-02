@@ -2,6 +2,7 @@ package com.liot
 
 import com.google.gson.Gson
 import com.liot.data.routes.createRoomRoute
+import com.liot.data.routes.gameWebSocketRoute
 import com.liot.data.routes.getRoomsRoute
 import com.liot.data.routes.joinRoomRoute
 import io.ktor.server.engine.*
@@ -34,6 +35,7 @@ fun main() {
             createRoomRoute()
             getRoomsRoute()
             joinRoomRoute()
+            gameWebSocketRoute()
         }
         //configureRouting()
         //configureSockets()
