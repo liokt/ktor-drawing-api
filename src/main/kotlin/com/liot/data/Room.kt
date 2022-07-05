@@ -2,8 +2,11 @@ package com.liot.data
 
 import com.liot.data.models.Announcement
 import com.liot.data.models.ChosenWord
+import com.liot.data.models.GameState
 import com.liot.data.models.PhaseChange
 import com.liot.gson
+import com.liot.other.transformToUnderscores
+import com.liot.other.words
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
 
@@ -17,6 +20,7 @@ class Room(
     private var drawingPlayer: Player? = null
     private var winningPlayers = listOf<String>()
     private var word: String? = null
+    private var curWords: List<String>? = null
 
     private var phaseChangedListener: ((Phase) -> Unit)? = null
     var phase = Phase.WAITING_FOR_PLAYERS
@@ -145,6 +149,23 @@ class Room(
     }
 
     private fun gameRunning() {
+        winningPlayers = listOf()
+        val wordToSend = word ?: curWords?.random() ?: words.random()
+        val wordWithUnderscores = wordToSend.transformToUnderscores()
+        val drawingUserName = (drawingPlayer ?: players.random()).username
+        val gameStateForDrawingPlayer = GameState(
+            drawingUserName,
+            wordWithUnderscores
+        )
+        GlobalScope.launch {
+            broadcastToAllExcept(
+                gson.toJson(gameStateForDrawingPlayer),
+                drawingPlayer?.clientId ?: players.random().clientId
+            )
+            drawingPlayer?.socket?.send(Frame.Text(gson.toJson(gameStateForDrawingPlayer)))
+            timeAndNotify(DELAY_GAME_RUNNING_TO_SHOW_WORD)
+            println("Drawing phase in room $name started. It'll last ${DELAY_GAME_RUNNING_TO_SHOW_WORD/1000}s")
+        }
 
     }
 
@@ -177,7 +198,7 @@ class Room(
         const val UPDATE_TIME_FREQUENCY = 1000L
         const val DELAY_WAITING_FOR_START_TO_NEW_ROUND = 10000L
         const val DELAY_NEW_ROUND_TO_GAME_RUNNING = 20000L
-        const val DELAY_GAME_RUNNING_SHOW_WORD = 60000L
+        const val DELAY_GAME_RUNNING_TO_SHOW_WORD = 60000L
         const val DELAY_SHOW_WORD_TO_NEW_ROUND = 10000L
 
         const val PENALTY_NOBODY_GUESSED_IT = 50
