@@ -12,6 +12,7 @@ import com.liot.other.Constants.TYPE_DRAW_DATA
 import com.liot.other.Constants.TYPE_GAME_STATE
 import com.liot.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import com.liot.other.Constants.TYPE_PHASE_CHANGE
+import com.liot.other.Constants.TYPE_PING
 import com.liot.server
 import com.liot.session.DrawingSession
 import io.ktor.http.cio.websocket.*
@@ -39,6 +40,11 @@ fun Route.gameWebSocketRoute() {
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
                         room.addPlayer(player.clientId, player.username, socket)
+                    } else {
+                        //when the player disconnect and reconnect in an amount of time less than the ping frequency
+                        val playerInRoom = room.players.find { it.clientId == clientID }
+                        playerInRoom?.socket = socket
+                        playerInRoom?.startPinging()
                     }
                 }
                 is ChosenWord -> {
@@ -56,6 +62,9 @@ fun Route.gameWebSocketRoute() {
                     if(!room.checkWordAndNotifyPlayers(payload)) {
                         room.broadcast(message)
                     }
+                }
+                is Ping -> {
+                    server.players[clientID]?.receivedPong()
                 }
             }
         }
@@ -89,6 +98,7 @@ fun Route.standardWebSocket(
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
                         TYPE_CHOSEN_WORD -> ChosenWord::class.java
                         TYPE_GAME_STATE -> GameState::class.java
+                        TYPE_PING -> Ping::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)
