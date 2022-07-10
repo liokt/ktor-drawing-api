@@ -8,6 +8,8 @@ import com.liot.gson
 import com.liot.other.Constants.TYPE_ANNOUNCEMENT
 import com.liot.other.Constants.TYPE_CHAT_MESSAGE
 import com.liot.other.Constants.TYPE_CHOSEN_WORD
+import com.liot.other.Constants.TYPE_DISCONNECT_REQUEST
+import com.liot.other.Constants.TYPE_DRAW_ACTION
 import com.liot.other.Constants.TYPE_DRAW_DATA
 import com.liot.other.Constants.TYPE_GAME_STATE
 import com.liot.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
@@ -55,7 +57,13 @@ fun Route.gameWebSocketRoute() {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
                     if (room.phase == Room.Phase.GAME_RUNNING) {
                         room.broadcastToAllExcept(message, clientID)
+                        room.addSerializedDrawInfo(message)
                     }
+                }
+                is DrawAction -> {
+                    val room = server.getRoomWithClientId(clientID) ?: return@standardWebSocket
+                    room.broadcastToAllExcept(message, clientID)
+                    room.addSerializedDrawInfo(message)
                 }
                 is ChatMessage -> {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
@@ -65,6 +73,9 @@ fun Route.gameWebSocketRoute() {
                 }
                 is Ping -> {
                     server.players[clientID]?.receivedPong()
+                }
+                is DisconnectRequest -> {
+                    server.playerLeft(clientID, true)
                 }
             }
         }
@@ -99,6 +110,8 @@ fun Route.standardWebSocket(
                         TYPE_CHOSEN_WORD -> ChosenWord::class.java
                         TYPE_GAME_STATE -> GameState::class.java
                         TYPE_PING -> Ping::class.java
+                        TYPE_DISCONNECT_REQUEST -> DisconnectRequest::class.java
+                        TYPE_DRAW_ACTION -> DrawAction::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)
