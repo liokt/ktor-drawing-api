@@ -10,6 +10,8 @@ import io.ktor.server.netty.*
 import com.liot.plugins.*
 import com.liot.session.DrawingSession
 import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.gson.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
@@ -20,7 +22,7 @@ val server = DrawingServer()
 val gson = Gson()
 
 fun main() {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+    embeddedServer(Netty, port = 8001, host = "0.0.0.0") {
         install(Sessions) {
             cookie<DrawingSession>("SESSION")
         }
@@ -39,7 +41,7 @@ fun main() {
         }
         //configureRouting()
         //configureSockets()
-        //configureMonitoring()
-        //configureSerialization()
+        configureMonitoring()
+        configureSerialization()
     }.start(wait = true)
 }
